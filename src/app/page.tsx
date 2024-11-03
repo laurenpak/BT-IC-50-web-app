@@ -1,15 +1,7 @@
 import SchedulePage from "@/components/pages/SchedulePage";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-
-interface UserMetadata {
-  fullName: string;
-}
-
-interface User {
-  id: string;
-  user_metadata: UserMetadata;
-}
+import { User as SupabaseUser } from "@supabase/auth-js";
 
 interface ScheduleEntry {
   day: string;
@@ -30,7 +22,7 @@ export default async function Home() {
     redirect("/login");
   }
 
-  const user: User = userData.user;
+  const user: SupabaseUser = userData.user;
 
   console.log(userData, "User Data");
 
@@ -41,7 +33,7 @@ export default async function Home() {
 
   if (scheduleError) {
     console.error(scheduleError);
-    // Handle the error as appropriate, e.g., redirect or display a message
+    // Handle the error as appropriate
   }
 
   console.log(scheduleData, "Schedule Data");
@@ -63,7 +55,7 @@ export default async function Home() {
 
   return (
     <SchedulePage
-      userName={user.user_metadata.fullName} // Fixed the typo here
+      userName={user.user_metadata?.fullName ?? "User"} // Use optional chaining and fallback
       scheduleData={scheduleDataUpdated}
     />
   );
