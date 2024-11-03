@@ -8,64 +8,26 @@ import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 
-// const scheduleData = [
-//   {
-//     date: "Friday, November 8",
-//     events: [
-//       { time: "8:30 - 9:30", title: "Keynote # Text Here" },
-//       {
-//         time: "9:45 - 10:45",
-//         title: "Session 1: Webdisney: Teaching Zack to Thiel",
-//       },
-//       { time: "11:00 - 12:00", title: "Session 2: Customer Engagement" },
-//       { time: "12:00 - 1:00", title: "Lunch" },
-//       { time: "1:00 - 2:00", title: "Session 2: Text Here" },
-//       { time: "2:00 - 2:15", title: "Coffee" },
-//       { time: "2:15 - 4:15", title: "Session 3:" },
-//     ],
-//   },
-//   {
-//     date: "Saturday, November 9",
-//     events: [
-//       { time: "8:30 - 9:30", title: "Keynote # Text Here" },
-//       {
-//         time: "9:45 - 10:45",
-//         title: "Session 1: Webdisney: Teaching Zack to Thiel",
-//       },
-//       { time: "11:00 - 12:00", title: "Session 2: Customer Engagement" },
-//       { time: "12:00 - 1:00", title: "Lunch" },
-//       { time: "1:00 - 2:00", title: "Session 2: Text Here" },
-//       { time: "2:00 - 2:15", title: "Coffee" },
-//       { time: "2:15 - 4:15", title: "Session 3:" },
-//     ],
-//   },
-//   {
-//     date: "Sunday, November 10",
-//     events: [
-//       { time: "8:30 - 9:30", title: "Keynote # Text Here" },
-//       {
-//         time: "9:45 - 10:45",
-//         title: "Session 1: Webdisney: Teaching Zack to Thiel",
-//       },
-//       { time: "11:00 - 12:00", title: "Session 2: Customer Engagement" },
-//       { time: "12:00 - 1:00", title: "Lunch" },
-//       { time: "1:00 - 2:00", title: "Session 2: Text Here" },
-//       { time: "2:00 - 2:15", title: "Coffee" },
-//       { time: "2:15 - 4:15", title: "Session 3:" },
-//     ],
-//   },
-// ];
+interface Event {
+  time: string;
+  title: string;
+}
+
+interface ScheduleDay {
+  day: string;
+  events: Event[];
+}
 
 interface SchedulePageProps {
-  userMame?: string;
-  scheduleData?: any;
+  userName?: string;
+  scheduleData?: ScheduleDay[];
 }
 
 export default function SchedulePage({
-  userMame,
+  userName,
   scheduleData,
 }: SchedulePageProps) {
-  const [username] = useState(userMame ?? "John Doe"); // Replace with actual user data
+  const [username] = useState(userName ?? "John Doe");
 
   const supabase = createClient();
   const router = useRouter();
@@ -80,7 +42,7 @@ export default function SchedulePage({
               alt="Logo"
               width={48}
               height={48}
-              className="h-8 w-auto mr-4 "
+              className="h-8 w-auto mr-4"
             />
             <h1 className="text-2xl font-bold text-[#17607b]">
               {username} Conference Schedule
@@ -107,39 +69,44 @@ export default function SchedulePage({
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-[95vh]">
-        {scheduleData?.length > 0 &&
-          scheduleData?.map((day, index) => (
+        {scheduleData?.length > 0 ? (
+          scheduleData.map((day, index) => (
             <Card
               key={index}
               className="mb-8 bg-white shadow-md rounded-lg overflow-hidden"
             >
               <CardHeader className="bg-[#17607b] text-white p-4">
-                <h2 className="text-xl font-semibold">{day?.day}</h2>
+                <h2 className="text-xl font-semibold">{day.day}</h2>
               </CardHeader>
               <CardContent className="p-0">
-                <table className="w-full">
-                  <tbody>
-                    {day?.events?.map((event, eventIndex) => (
-                      <tr key={eventIndex} className="border-b last:border-b-0">
-                        <td className="py-3 px-4 align-top w-[30%] ">
-                          <span className="text-sm font-medium text-[#17607b]">
-                            {event.time}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="text-sm text-gray-800">
-                            {event.title}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                {day.events.length > 0 ? (
+                  <table className="w-full">
+                    <tbody>
+                      {day.events.map((event, eventIndex) => (
+                        <tr key={eventIndex} className="border-b last:border-b-0">
+                          <td className="py-3 px-4 align-top w-[30%]">
+                            <span className="text-sm font-medium text-[#17607b]">
+                              {event.time}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="text-sm text-gray-800">
+                              {event.title}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="p-4 text-center text-gray-500">
+                    No events scheduled for this day.
+                  </div>
+                )}
               </CardContent>
             </Card>
-          ))}
-
-        {scheduleData?.length === 0 && (
+          ))
+        ) : (
           <div className="min-h-[85vh]">
             <div className="bg-white shadow-md rounded-lg p-8 text-center">
               <h2 className="text-xl font-semibold text-[#17607b]">
@@ -149,7 +116,7 @@ export default function SchedulePage({
           </div>
         )}
       </main>
-      <footer className="bg-white border-t mt-8  w-full">
+      <footer className="bg-white border-t mt-8 w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center text-sm text-[#17607b]">
           <p>
             *Disclaimer: This is a personalized schedule of all the events that
