@@ -3,95 +3,92 @@ import fs from "node:fs";
 import process from "node:process";
 import { createClient } from "@supabase/supabase-js";
 
-interface ScheduleDay {
-  // define properties of a schedule day here
-  title: string;
-  time: string;
-  // add any other relevant properties
+interface Row {
+  [key: string]: string | undefined;
 }
 
-function formatSchedule(row: any, userId: string) {
-  const schedule: any = {};
+interface ScheduleEntry {
+  time: string;
+  title: string;
+  day: string;
+  user_id: string;
+}
+
+function formatSchedule(row: Row, userId: string): { events: ScheduleEntry[] }[] {
+  const schedule: { [key: string]: ScheduleEntry[] } = {};
 
   for (const [key, value] of Object.entries(row)) {
-    if (
-      key.includes("Monday") ||
-      key.includes("Tuesday") ||
-      key.includes("Wednesday") ||
-      key.includes("Thursday") ||
-      key.includes("Friday") ||
-      key.includes("Saturday") ||
-      key.includes("Sunday")
-    ) {
+    if (key.match(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)/)) {
       const [day, time] = key.split(", ");
-      console.log(time, "Day, Time, Value");
       if (!schedule[day]) schedule[day] = [];
 
       schedule[day].push({
-        time: time?.trim(),
-        title: (value as string)?.trim(), // Type assertion here
+        time: time?.trim() || '',
+        title: (value as string)?.trim() || '',
         day: day,
         user_id: userId,
       });
     }
   }
 
-  // Convert the schedule object to an array
   return Object.entries(schedule).map(([date, events]) => ({
-    // date,
     events,
   }));
 }
 
-fs.createReadStream(process.cwd() + "/scripts/IC50 Temp Sem ASSIGNMENTS.csv")
-  .pipe(parse({ delimiter: ",", columns: true }))
-  .on("data", async function (row) {
-    // console.log(row);
+async function processRow(row: Row) {
+  const supabase = createClient("supabaseUrl", "supabaseKey");
 
-    const supabase = createClient("supabaseUrl", "supabaseKey");
+  const firstName = row["First Name"];
+  const lastName = row["Last Name"];
 
-    const firstName = row["First Name"];
-    const lastName = row["Last Name"];
+  const { data, error } = await supabase
+    .from("users")
+    .select("id")
+    .eq("username", `${firstName} ${lastName}`)
+    .single();
 
-    const { data, error } = await supabase
-      .from("users")
-      .select("id")
-      .eq("username", `${firstName} ${lastName}`)
-      .single();
+  let userId;
 
-    let userId;
-
-    if (data) {
-      userId = data.id;
-    } else {
-      const { data, error } = await supabase.auth.signUp({
-        email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`,
-        password: "12345678",
-        options: {
-          data: {
-            fullName: `${firstName} ${lastName}`,
-          },
+  if (data) {
+    userId = data.id;
+  } else {
+    const { data, error } = await supabase.auth.signUp({
+      email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`,
+      password: "12345678",
+      options: {
+        data: {
+          fullName: `${firstName} ${lastName}`,
         },
-      });
+      },
+    });
 
-      if (error) {
-        console.error(error);
-        return;
-      }
-
-      userId = data.user?.id;
+    if (error) {
+      console.error(error);
+      return;
     }
 
-    const schedule = formatSchedule(row, userId);
+    userId = data.user?.id;
+  }
 
-    const { data: scheduleData } = await supabase
-      .from("schedules")
-      .insert(schedule.flatMap((sc) => sc.events))
-      .select("*");
+  const schedule = formatSchedule(row, userId);
 
-    console.log(scheduleData, "Schedule Data");
+  const { data: scheduleData, error: insertError } = await supabase
+    .from("schedules")
+    .insert(schedule.flatMap((sc) => sc.events))
+    .select("*");
 
-    setTimeout(() => {
-      console.log("Data Feeded");
-    }, 3500);
+  if (insertError) {
+    console.error(insertError);
+    return;
+  }
+
+  console.log(scheduleData, "Schedule Data");
+}
+
+fs.createReadStream(process.cwd() + "/scripts/IC50 Temp Sem ASSIGNMENTS.csv")
+  .pipe(parse({ delimiter: ",", columns: true }))
+  .on("data", processRow)
+  .on("end", () => {
+    console.log("CSV file successfully processed.");
   });
