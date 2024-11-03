@@ -42,6 +42,12 @@ async function processRow(row: Row) {
   const firstName = row["First Name"];
   const lastName = row["Last Name"];
 
+  // Check if firstName and lastName are defined
+  if (!firstName || !lastName) {
+    console.error("First Name or Last Name is missing in the row:", row);
+    return; // Early return if either is undefined
+  }
+
   const { data, error } = await supabase
     .from("users")
     .select("id")
@@ -85,6 +91,7 @@ async function processRow(row: Row) {
 
   console.log(scheduleData, "Schedule Data");
 }
+
 
 fs.createReadStream(process.cwd() + "/scripts/IC50 Temp Sem ASSIGNMENTS.csv")
   .pipe(parse({ delimiter: ",", columns: true }))
