@@ -22,7 +22,7 @@ function formatSchedule(row: any, userId: string) {
 
       schedule[day].push({
         time: time?.trim(),
-        title: value?.trim(),
+        title: (value as string)?.trim(), // Type assertion here
         day: day,
         user_id: userId,
       });
