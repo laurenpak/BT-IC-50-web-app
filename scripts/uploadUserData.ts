@@ -3,6 +3,13 @@ import fs from "node:fs";
 import process from "node:process";
 import { createClient } from "@supabase/supabase-js";
 
+interface ScheduleDay {
+  // define properties of a schedule day here
+  title: string;
+  time: string;
+  // add any other relevant properties
+}
+
 function formatSchedule(row: any, userId: string) {
   const schedule: any = {};
 
